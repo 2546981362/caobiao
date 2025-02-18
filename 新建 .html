@@ -1,0 +1,148 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <style>
+        body {
+            margin: 0;
+            overflow: hidden;
+            background: #000;
+        }
+        canvas {
+            position: fixed;
+            width: 100%;
+            height: 100%;
+        }
+        .text-container {
+            position: fixed;
+            width: 100%;
+            height: 100%;
+            pointer-events: none;
+        }
+        .text-item {
+            position: absolute;
+            font-family: '微软雅黑', sans-serif;
+            font-weight: bold;
+            font-size: 2.5rem;
+            text-shadow: 0 0 10px rgba(255,255,255,0.5);
+            animation: textAnim 3s ease-in-out both;
+            white-space: nowrap;
+        }
+
+        @keyframes textAnim {
+            0% { opacity: 0; transform: scale(0); }
+            20% { opacity: 1; transform: scale(1.2); }
+            80% { opacity: 1; transform: scale(1); }
+            100% { opacity: 0; transform: scale(0.5); }
+        }
+    </style>
+</head>
+<body>
+    <canvas id="fireworks"></canvas>
+    <div class="text-container"></div>
+
+    <script>
+        // 烟花背景
+        const canvas = document.getElementById('fireworks');
+        const ctx = canvas.getContext('2d');
+        let w = canvas.width = window.innerWidth;
+        let h = canvas.height = window.innerHeight;
+        
+        class Firework {
+            constructor() {
+                this.x = Math.random() * w;
+                this.y = h;
+                this.speed = Math.random() * 3 + 2;
+                this.color = `hsl(${Math.random()*360}, 100%, 50%)`;
+                this.particles = [];
+            }
+            
+            update() {
+                this.y -= this.speed;
+                if(this.speed > 0.5) this.speed *= 0.95;
+                
+                if(this.speed <= 0.5) {
+                    this.explode();
+                    return true;
+                }
+            }
+            
+            explode() {
+                for(let i=0; i<100; i++) {
+                    this.particles.push({
+                        x: this.x,
+                        y: this.y,
+                        angle: Math.random() * Math.PI * 2,
+                        speed: Math.random() * 5,
+                        alpha: 1
+                    });
+                }
+            }
+            
+            draw() {
+                ctx.beginPath();
+                ctx.arc(this.x, this.y, 2, 0, Math.PI*2);
+                ctx.fillStyle = this.color;
+                ctx.fill();
+                
+                this.particles.forEach((p, i) => {
+                    p.x += Math.cos(p.angle) * p.speed;
+                    p.y += Math.sin(p.angle) * p.speed;
+                    p.alpha -= 0.01;
+                    ctx.beginPath();
+                    ctx.arc(p.x, p.y, 1, 0, Math.PI*2);
+                    ctx.fillStyle = `hsla(${Math.random()*360}, 100%, 50%, ${p.alpha})`;
+                    ctx.fill();
+                    if(p.alpha <= 0) this.particles.splice(i, 1);
+                });
+            }
+        }
+
+        let fireworks = [];
+        function createFirework() {
+            fireworks.push(new Firework());
+            if(Math.random() < 0.5) setTimeout(createFirework, 500);
+        }
+
+        // 文字动画
+        const texts = [
+            "河北辛集中学", "2025级", "金榜题名", 
+            "所愿皆所得", "愿你落笔生花", "书写未来荣耀"
+        ];
+        
+        function createText() {
+            const text = document.createElement('div');
+            text.className = 'text-item';
+            text.textContent = texts[Math.floor(Math.random()*texts.length)];
+            text.style.color = `hsl(${Math.random()*360}, 100%, 50%)`;
+            text.style.left = Math.random()*(w - 300) + 'px';
+            text.style.top = Math.random()*(h - 100) + 'px';
+            document.querySelector('.text-container').appendChild(text);
+            
+            setTimeout(() => text.remove(), 3000);
+        }
+
+        // 动画循环
+        function animate() {
+            ctx.fillStyle = 'rgba(0, 0, 0, 0.1)';
+            ctx.fillRect(0, 0, w, h);
+            
+            fireworks.forEach((f, i) => {
+                if(f.update()) fireworks.splice(i, 1);
+                f.draw();
+            });
+            
+            requestAnimationFrame(animate);
+        }
+
+        // 初始化
+        window.addEventListener('resize', () => {
+            w = canvas.width = window.innerWidth;
+            h = canvas.height = window.innerHeight;
+        });
+
+        setInterval(createFirework, 1000);
+        setInterval(createText, 800);
+        animate();
+    </script>
+</body>
+</html>
